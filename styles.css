@@ -5,7 +5,7 @@
 #date { display: block; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
 @media (max-width: 560px) {
   .fields > .date-field { grid-column: auto; }
-  #date { font-size: 12px; padding: 8px 6px; }
+  #date { padding: 8px 6px; }
   #date::-webkit-date-and-time-value { min-width: 0; }
   #date::-webkit-calendar-picker-indicator { margin: 0; padding: 0; }
 }
@@ -46,3 +46,16 @@ input, select { max-width: 100%; }
     text-align: left;
   }
 }
+
+/* フォーカス前から16pxを適用。ピンチズームは制限しない。 */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+input, select, textarea { font-size: 16px !important; }
+/* 家計簿 v2 */
+.app-tabs{display:flex;padding:5px;background:#e9ede5;border-radius:15px;gap:5px;margin:-13px 0 32px}
+.app-tabs button{flex:1;padding:13px 16px;border:0;border-radius:11px;background:transparent;color:#6d7b70;font-size:14px}
+.app-tabs button[aria-pressed=true]{background:#fff;color:#315643;box-shadow:0 2px 8px #314d3410}
+.month-nav{display:flex;align-items:center;gap:10px;margin:0 0 21px}.month-nav input{width:170px;margin:0;background:#fff;height:42px}.month-nav .quiet{min-width:38px;font-size:22px;padding:3px 10px}
+.family-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}.total-card{padding:23px 20px;background:#e5eee8;border-radius:21px;min-width:0}.total-card.spending{background:#f1e7de}.total-card.net{background:#eeeee3}.total-label{font-size:12px;color:#788174}.total-value{font-size:29px;margin:13px 0 4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.total-note{font-size:10px;color:#889082}.negative{color:#a34f42}
+.budget-panel{padding:20px 25px}.budget-line{display:flex;justify-content:space-between;gap:10px;font-size:12px}.budget-line span:last-child{font-variant-numeric:tabular-nums}.budget-track{height:6px;background:#eff0e8;border-radius:5px;overflow:hidden;margin:14px 0}.budget-track span{display:block;height:100%;background:#82a18a}.budget-track span.over{background:#c28773}details summary{cursor:pointer;font-size:11px;color:#738174}#budgetForm{display:flex;gap:12px;align-items:end;margin-top:16px}#budgetForm label{flex:1;min-width:0}#budgetForm button{min-height:48px}
+#householdForm .fields:first-child{margin-top:0}.add-category{padding:12px 0 18px}.filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.filters label:last-child{grid-column:1/-1}.filters input,.filters select{font-size:14px}.category-row{margin-bottom:18px}.category-label{display:flex;justify-content:space-between;gap:12px;font-size:12px}.category-label span:first-child{overflow-wrap:anywhere}.category-bar{height:5px;background:#f0f2ec;margin-top:9px;border-radius:6px;overflow:hidden}.category-bar span{display:block;height:100%;background:#86a18d}.person-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;border-top:1px solid var(--line);padding-top:18px;margin-top:24px}.person-total{font-size:11px;color:#7f8b80}.person-total span{display:block;font-size:14px;margin-top:9px;color:#41564a;overflow-wrap:anywhere}.source-badge{display:inline-block;font-size:9px;padding:3px 6px;border-radius:5px;background:#edf1e8;color:#63806b;margin-left:5px}.record-icon.Hayu{background:#e8e8f3;color:#8783ac}.record-icon.shared{background:#eef0e4;color:#8b956c}.record-icon.income{background:#e5f0e5;color:#67966d}.record-meta{overflow-wrap:anywhere}dialog{width:calc(100% - 32px);max-width:430px;padding:28px;border:1px solid var(--line);border-radius:23px;color:var(--ink)}dialog::backdrop{background:#25382e55}dialog input,dialog select{margin-bottom:20px}dialog .primary{width:100%}.household-empty{padding:24px;text-align:center;color:#889082;font-size:12px}
+@media(max-width:560px){.family-totals{gap:8px}.total-card{padding:18px 12px;border-radius:17px}.total-value{font-size:21px;letter-spacing:-.6px}.total-label{font-size:10px}.total-note{font-size:9px}.person-totals{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:20px}.budget-panel{padding:18px}.pill{max-width:125px;white-space:normal;text-align:center}.month-nav{gap:8px}.month-nav input{min-width:0;max-width:165px}#householdDate{-webkit-appearance:none;appearance:none;min-width:0;width:100%;max-width:100%;padding-inline:4px;overflow:hidden}#householdDate::-webkit-date-and-time-value{min-width:0;max-width:100%;text-align:left}.total-card .total-value{line-height:1.3}.record-body{flex-basis:75px}}
