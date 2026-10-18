@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+const C=require('../core.js');
+const base={start_month:'2026-10-01',today:'2026-10-18',entries:[]};
+assert.equal(C.summary(base,'Ritsuya').balance,15000);
+const s={...base,entries:[{person:'Ritsuya',entry_date:'2026-10-18',kind:'expense',cents:2450},{person:'honami',entry_date:'2026-10-18',kind:'expense',cents:3800},{person:'Ritsuya',entry_date:'2026-10-18',kind:'refund',cents:300}]};
+assert.equal(C.summary(s,'Ritsuya').balance,12850);assert.equal(C.summary(s,'honami').balance,11200);
+assert.equal(C.summary({...s,today:'2026-11-01'},'Ritsuya').balance,27850);assert.equal(C.summary({...s,today:'2026-11-01'},'Ritsuya').spent,0);
+assert.equal(C.summary({...base,today:'2027-02-01'},'Ritsuya').balance,75000);
+assert.equal(C.summary({...s,today:'2026-10-17'},'Ritsuya').balance,15000);
+assert.equal(C.parseCents('0.01'),1);assert.equal(C.parseCents('150'),15000);assert.equal(C.parseCents('10.10'),1010);
+for(const v of ['1.234','0','-3','1e3','','1000000.01'])assert.throws(()=>C.parseCents(v));
+assert.equal(C.summary({...base,entries:[{person:'honami',entry_date:'2026-10-02',kind:'expense',cents:20000}]},'honami').balance,-5000);
+console.log('PASS: initial allowance, separate wallets, expenses, refunds, rollover, missed months, dates, cents, negative balance.');
