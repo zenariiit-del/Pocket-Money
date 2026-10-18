@@ -9,3 +9,40 @@
   #date::-webkit-date-and-time-value { min-width: 0; }
   #date::-webkit-calendar-picker-indicator { margin: 0; padding: 0; }
 }
+/* 画面全体の横はみ出しと、入力時のiPhone自動ズームによる横ずれを防ぐ。 */
+html { width: 100%; overflow-x: hidden; }
+body { width: 100%; max-width: 100%; overflow-x: hidden; }
+@supports (overflow-x: clip) {
+  html, body { overflow-x: clip; }
+}
+main { width: 100%; min-width: 0; }
+main > *, .panel, .composer form, .intro > div,
+.section-title > *, .wallet, .wallet-top > *, footer > * { min-width: 0; }
+.cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+header { gap: 8px; }
+.brand { min-width: 0; }
+.mark, .pill, #refresh { flex-shrink: 0; }
+.intro { gap: 8px; }
+.section-title { flex-wrap: wrap; }
+input, select { max-width: 100%; }
+.history input[type=month] { flex: 0 1 158px; min-width: 0; width: 158px; }
+.record { flex-wrap: wrap; }
+.record-body { flex-basis: 0; }
+.record-actions { flex-shrink: 0; }
+.actions .primary, .segmented button { min-width: 0; }
+#syncStatus { overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  input, select, .history input[type=month], #date { font-size: 16px; }
+  #date, .history input[type=month] {
+    -webkit-appearance: none;
+    appearance: none;
+    overflow: hidden;
+    padding-inline: 4px;
+  }
+  #date::-webkit-date-and-time-value,
+  .history input[type=month]::-webkit-date-and-time-value {
+    min-width: 0;
+    max-width: 100%;
+    text-align: left;
+  }
+}
