@@ -8,7 +8,7 @@ const personLabel=p=>p==='家族共通'?'Shared':p;
 const money=cents=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(cents/100);
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function message(text,error=false){$('message').textContent=text;$('message').classList.toggle('error',error);$('message').hidden=false;clearTimeout(message.timer);message.timer=setTimeout(()=>$('message').hidden=true,error?12000:5000);}
-function fail(e){message(String(e.message||e).includes('CONFLICT')?'This record changed on another device. Refresh and edit it again.':(e.code==='PGRST202'&&String(e.message||e).includes('household_'))?'Database update needed. Run english_upgrade.sql in Supabase.':`Could not complete the request: ${e.message||e}`,true);}
+function fail(e){message(String(e.message||e).includes('CONFLICT')?'This record changed on another device. Refresh and edit it again.':(e.code==='PGRST202')?'Database update needed. Run notifications_upgrade.sql in Supabase.':`Could not complete the request: ${e.message||e}`,true);}
 function setBusy(value){busy=value;document.querySelectorAll('#entryForm button,#entryForm input,#entryForm select,#householdForm button,#householdForm input,#householdForm select,#budgetForm button,#budgetForm input,#categoryForm button,#categoryForm input,#categoryForm select,#manageCategoryDialog button,.record button').forEach(el=>el.disabled=value);$('logout').disabled=value;}
 function choose(value){person=value;document.querySelectorAll('[data-person]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.person===person)));$('save').textContent=editing?'Save changes':`Record ${person}’s ${kindLabels[$('kind').value].toLowerCase()}`;}
 function reset(){editing=null;requestId=crypto.randomUUID();$('entryForm').reset();$('date').value=snapshot.today;$('formTitle').textContent='Add an allowance entry';$('cancel').hidden=true;choose(person);}
@@ -32,7 +32,7 @@ async function load(){
  if(!$('date').value)$('date').value=snapshot.today;
  if(!$('householdDate').value)$('householdDate').value=snapshot.today;
  if(!$('familyMonth').value)$('familyMonth').value=snapshot.today.slice(0,7);
- render();$('syncStatus').textContent=demo?'Demo · Changes are not saved':`Last synced ${new Date().toLocaleTimeString('en-US')} · US Eastern time`;
+ render();if(!demo)window.WalletNotifications?.start(db).catch(()=>{});openNotificationRoute();$('syncStatus').textContent=demo?'Demo · Changes are not saved':`Last synced ${new Date().toLocaleTimeString('en-US')} · US Eastern time`;
  }catch(e){fail(e);$('syncStatus').textContent='Sync failed · Please refresh';}finally{loading=false;$('refresh').disabled=false;$('save').disabled=false;$('householdSave').disabled=false;$('householdRefresh').disabled=false;}
 }
 document.querySelectorAll('[data-person]').forEach(el=>el.onclick=()=>choose(el.dataset.person));
@@ -41,8 +41,8 @@ $('entryForm').onsubmit=async e=>{
  e.preventDefault();if(busy||loading)return;
  let row;try{row={id:editing?editing.id:requestId,version:editing?editing.version:0,person,entry_date:$('date').value,kind:$('kind').value,cents:C.parseCents($('amount').value),memo:$('memo').value.trim()};if(row.entry_date<snapshot.start_month||row.entry_date>snapshot.today)throw Error('Choose a date between the start month and today.');}catch(err){return message(err.message,true);}
  setBusy(true);
- try{if(demo){const index=snapshot.entries.findIndex(x=>x.id===row.id);const saved={...row,version:row.version+1};if(index>=0)snapshot.entries[index]=saved;else snapshot.entries.unshift(saved);}else{const {error}=await db.rpc('allowance_save',{p_id:row.id,p_version:row.version,p_person:row.person,p_date:row.entry_date,p_kind:row.kind,p_cents:row.cents,p_memo:row.memo});if(error)throw error;}
- reset();message(demo?'Demo entry saved.':'Saved.');
+ try{if(demo){const index=snapshot.entries.findIndex(x=>x.id===row.id);const saved={...row,version:row.version+1};if(index>=0)snapshot.entries[index]=saved;else snapshot.entries.unshift(saved);}else{const {error}=await db.rpc('wallet_save_allowance',{p_id:row.id,p_version:row.version,p_person:row.person,p_date:row.entry_date,p_kind:row.kind,p_cents:row.cents,p_memo:row.memo,p_device_id:window.WalletNotifications?.getDeviceId()||null});if(error)throw error;}
+ reset();if(!demo)window.WalletNotifications?.flush();message(demo?'Demo entry saved.':'Saved.');
  }catch(err){fail(err);}finally{setBusy(false);await load();}
 };
 $('history').onclick=async e=>{
@@ -60,7 +60,7 @@ $('export').onclick=()=>{
  const quote=v=>'"'+String(v).replace(/^[=+@\-\t\r]/,"'$&").replaceAll('"','""')+'"';
  const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='our-allowance.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
-$('logout').onclick=async()=>{if(demo){location.href=location.pathname;return;}const {error}=await db.auth.signOut();if(error)return fail(error);snapshot=null;resetLogin();};
+$('logout').onclick=async()=>{if(demo){location.href=location.pathname;return;}await window.WalletNotifications?.beforeLogout();const {error}=await db.auth.signOut();if(error)return fail(error);snapshot=null;resetLogin();};
 function resetLogin(){$('loginPanel').hidden=false;$('appPanel').hidden=true;$('password').value='';$('historyMonth').value='';$('date').value='';editing=null;householdEditing=null;$('householdForm').reset();$('familyMonth').value='';$('householdCancel').hidden=true;$('householdFormTitle').textContent='Add a transaction';$('budgetDetails').open=false;$('categoryDialog').close();$('manageCategoryDialog').close();}
 $('loginForm').onsubmit=async e=>{e.preventDefault();if(!db)return message('Set your connection details in config.js first.',true);$('loginButton').disabled=true;try{const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;$('password').value='';await load();}catch(err){fail(err);}finally{$('loginButton').disabled=false;}};
 async function init(){
@@ -73,7 +73,7 @@ async function init(){
 }
 window.addEventListener('focus',()=>{if(snapshot)load();});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&snapshot)load();});setInterval(()=>{if(snapshot&&!document.hidden)load();},20000);
 
-if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./service-worker.js?v=3.1').catch(()=>{});
 
 function switchTab(tab){
  const household=tab==='household';$('householdScreen').hidden=!household;$('allowanceScreen').hidden=household;
@@ -138,8 +138,8 @@ $('householdForm').onsubmit=async e=>{
  let row;try{row={id:householdEditing?.id||householdRequestId,version:householdEditing?.version||0,person:$('householdPerson').value,entry_date:$('householdDate').value,kind:$('householdKind').value,category_id:$('householdCategory').value,cents:C.parseCents($('householdAmount').value),memo:$('householdMemo').value.trim(),payment:$('householdPayment').value};if(!row.category_id)throw Error('Choose a category, or add one first.');if(row.entry_date<'2000-01-01'||row.entry_date>snapshot.today)throw Error('Choose a date between January 1, 2000 and today.');}catch(err){return message(err.message,true);}
  setBusy(true);try{
   if(demo){const i=snapshot.household.findIndex(e=>e.id===row.id);if(i>=0)snapshot.household[i]={...row,version:row.version+1};else snapshot.household.unshift({...row,version:1});}
-  else{const {error}=await db.rpc('household_save',{p_id:row.id,p_version:row.version,p_person:row.person,p_date:row.entry_date,p_kind:row.kind,p_category:row.category_id,p_cents:row.cents,p_memo:row.memo,p_payment:row.payment});if(error)throw error;}
-  $('familyMonth').value=row.entry_date.slice(0,7);resetHousehold();message(demo?'Demo entry saved.':'Saved.');
+  else{const {error}=await db.rpc('wallet_save_household',{p_id:row.id,p_version:row.version,p_person:row.person,p_date:row.entry_date,p_kind:row.kind,p_category:row.category_id,p_cents:row.cents,p_memo:row.memo,p_payment:row.payment,p_device_id:window.WalletNotifications?.getDeviceId()||null});if(error)throw error;}
+  $('familyMonth').value=row.entry_date.slice(0,7);resetHousehold();if(!demo)window.WalletNotifications?.flush();message(demo?'Demo entry saved.':'Saved.');
  }catch(err){fail(err);}finally{setBusy(false);await load();}
 };
 $('familyHistory').onclick=async e=>{
@@ -209,4 +209,16 @@ async function handleCategoryAction(event){
  }catch(error){fail(error);}finally{setBusy(false);await load();}
 }
 $('categoryManagerList').onclick=handleCategoryAction;$('removedCategoryList').onclick=handleCategoryAction;
+let notificationRouteOpened=false;
+function openNotificationRoute(){
+ if(notificationRouteOpened)return;notificationRouteOpened=true;
+ const query=new URLSearchParams(location.search),view=query.get('view'),month=query.get('month');
+ if(view==='allowance'||view==='household'){
+  if(month&&/^\d{4}-\d{2}$/.test(month)&&month<=snapshot.today.slice(0,7)){
+   if(view==='household'&&month>='2000-01')$('familyMonth').value=month;
+   if(view==='allowance'&&month>=snapshot.start_month.slice(0,7))$('historyMonth').value=month;
+  }
+  switchTab(view);render();
+ }
+}
 init().catch(fail);
